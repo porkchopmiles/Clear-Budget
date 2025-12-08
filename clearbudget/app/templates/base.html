@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Budget Builder{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Guided Research Budget Builder</h1>
+        <nav>
+            <a href="{{ url_for('faculty.index') }}">Faculty</a> |
+            <a href="{{ url_for('budget.budget_index') }}">Budgets</a>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Budget Wizard - Step 2{% endblock %}
+
+{% block content %}
+<h2>Budget Wizard - Step 2: Add Students & Postdocs</h2>
+
+<form action="{{ url_for('budget.step2') }}" method="post">
+    <label for="name">Name:</label>
+    <input type="text" name="name" id="name" required>
+
+    <label for="type">Type:</label>
+    <select name="type" id="type" required>
+        <option value="Student">Student</option>
+        <option value="Postdoc">Postdoc</option>
+    </select>
+
+    <label for="fte">% Effort (FTE):</label>
+    <input type="number" name="fte" id="fte" min="0" max="100" required>
+
+    <label for="salary">Annual Salary/Stipend ($):</label>
+    <input type="number" name="salary" id="salary" step="0.01" required>
+
+    <label for="fringe">Fringe Rate (%):</label>
+    <input type="number" name="fringe" id="fringe" step="0.01" required>
+    
+    <label for="residency">Residency:</label>
+    <select name="residency" id="residency" required>
+        <option value="In-State">In-State</option>
+        <option value="Out-of-State">Out-of-State</option>
+    </select>
+
+    <label for="semester">Semester:</label>
+    <select name="semester" id="semester" required>
+        <option value="Fall">Fall</option>
+        <option value="Spring">Spring</option>
+        <option value="Summer">Summer</option>
+    </select>
+
+
+    <button type="submit">Add Personnel</button>
+</form>
+
+<hr>
+
+<h3>Added Personnel</h3>
+{% if session.get('budget_personnel') %}
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>FTE (%)</th>
+        <th>Salary ($)</th>
+        <th>Fringe ($)</th>
+        <th>Tuition ($)</th>
+    </tr>
+    {% for p in session['budget_personnel'] %}
+    <tr>
+        <td>{{ p.name }}</td>
+        <td>{{ p.type }}</td>
+        <td>{{ p.fte }}</td>
+        <td>{{ "%.2f"|format(p.salary) }}</td>
+        <td>{{ "%.2f"|format(p.salary * p.fringe / 100) }}</td>
+        <td>{{ "%.2f"|format(p.tuition) if p.type=='Student' else 0 }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No personnel added yet.</p>
+{% endif %}
+
+<br>
+<form action="{{ url_for('budget.step3') }}">
+    <button type="submit">Next Step: Review Budget</button>
+</form>
+{% endblock %}
+

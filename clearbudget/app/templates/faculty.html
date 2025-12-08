@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Faculty</h2>
+<form action="{{ url_for('faculty.add_faculty') }}" method="post">
+    Name: <input type="text" name="name" required>
+    Title: <input type="text" name="title">
+    Salary: <input type="number" name="salary" step="0.01" required>
+    Fringe: <input type="number" name="fringe" step="0.01" required>
+    <button type="submit">Add Faculty</button>
+</form>
+
+<h3>Existing Faculty</h3>
+<ul>
+    {% for f in faculty %}
+    <li>{{ f.name }} ({{ f.title }}): ${{ f.annual_salary }}, Fringe: {{ f.fringe_rate }}%</li>
+    {% endfor %}
+</ul>
+{% endblock %}

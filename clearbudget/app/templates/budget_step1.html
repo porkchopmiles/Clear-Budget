@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Budget Wizard - Step 1{% endblock %}
+
+{% block content %}
+<h2>Budget Wizard - Step 1: Select PI and Budget Years</h2>
+
+<form action="{{ url_for('budget.step1') }}" method="post">
+    <label for="pi_id">Select Principal Investigator (PI):</label>
+    <select name="pi_id" id="pi_id" required>
+        {% for pi in pis %}
+            <option value="{{ pi.faculty_id }}">{{ pi.name }}</option>
+        {% endfor %}
+    </select>
+    <br><br>
+
+    <label for="start_year">Start Year:</label>
+    <input type="number" name="start_year" id="start_year" value="2026" required>
+    <br><br>
+
+    <label for="end_year">End Year:</label>
+    <input type="number" name="end_year" id="end_year" value="2030" required>
+    <br><br>
+
+    <button type="submit">Next Step</button>
+</form>
+{% endblock %}

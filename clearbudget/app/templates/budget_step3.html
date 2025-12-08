@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Budget Wizard - Step 3{% endblock %}
+
+{% block content %}
+<h2>Budget Wizard - Step 3: Review Budget</h2>
+
+<h3>Personnel Summary</h3>
+{% if personnel %}
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>FTE (%)</th>
+        <th>Salary ($)</th>
+        <th>Fringe ($)</th>
+    </tr>
+    {% for p in personnel %}
+    <tr>
+        <td>{{ p.name }}</td>
+        <td>{{ p.type }}</td>
+        <td>{{ p.fte }}</td>
+        <td>{{ "%.2f"|format(p.salary) }}</td>
+        <td>{{ "%.2f"|format(p.salary * p.fringe / 100) }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h4>Total Salary: ${{ "%.2f"|format(total_salary) }}</h4>
+<h4>Total Fringe: ${{ "%.2f"|format(total_fringe) }}</h4>
+<h4>Grand Total: ${{ "%.2f"|format(grand_total) }}</h4>
+
+{% else %}
+<p>No personnel added yet.</p>
+{% endif %}
+
+<br>
+<form action="{{ url_for('budget.export_excel') }}">
+    <button type="submit">Export Budget to Excel</button>
+</form>
+{% endblock %}
