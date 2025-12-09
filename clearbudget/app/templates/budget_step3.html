@@ -31,7 +31,42 @@
 <h4>Total Salary: ${{ "%.2f"|format(total_salary) }}</h4>
 <h4>Total Fringe: ${{ "%.2f"|format(total_fringe) }}</h4>
 <h4>Total Tuition: ${{ "%.2f"|format(total_tuition) }}</h4>
-<h4>Grand Total: ${{ "%.2f"|format(grand_total) }}</h4>
+
+
+<h3>Travel Summary</h3>
+{% if travel_list %}
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Profile Name</th>
+        <th>Type</th>
+        <th>Days</th>
+        <th>Airfare ($)</th>
+        <th>Per Diem ($)</th>
+        <th>Lodging ($)</th>
+        <th>Total ($)</th>
+    </tr>
+    {% for t in travel_list %}
+    <tr>
+        <td>{{ t.name }}</td>
+        <td>{{ t.type }}</td>
+        <td>{{ t.days }}</td>
+        <td>{{ "%.2f"|format(t.airfare) }}</td>
+        <td>{{ "%.2f"|format(t.per_diem) }}</td>
+        <td>{{ "%.2f"|format(t.lodging) }}</td>
+        <td>{{ "%.2f"|format(t.total) }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h4>Total Travel: ${{ "%.2f"|format(total_travel) }}</h4>
+{% else %}
+<p>No travel entries added yet.</p>
+{% endif %}
+
+<h4>F&A Overhead ({{ fa_rate }}%): ${{ "%.2f"|format(fa_cost) }}</h4>
+
+<h3>Grand Total (Direct Costs + F&A): ${{ "%.2f"|format(grand_total) }}</h3>
+
 
 {% else %}
 <p>No personnel added yet.</p>

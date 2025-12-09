@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Budget Wizard – Step 4: Travel{% endblock %}
+
+{% block content %}
+<h2>Budget Wizard – Step 4: Travel</h2>
+
+<form action="{{ url_for('budget.step4') }}" method="POST">
+    <label for="profile">Select Travel Profile:</label>
+    <select name="profile" id="profile" required>
+        <option value="" disabled selected>Select profile…</option>
+        {% for p in profiles %}
+        <option value="{{ p['profile_id'] }}">
+            {{ p['name'] }} — {{ p['type'] }}
+            (Airfare: ${{ "%.2f"|format(p['airfare']) }},
+            Per-diem: ${{ "%.2f"|format(p['per_diem']) }},
+            Lodging: ${{ "%.2f"|format(p['lodging_cap']) }})
+        </option>
+        {% endfor %}
+    </select>
+
+    <label for="days">Number of Days:</label>
+    <input type="number" name="days" id="days" min="1" required>
+
+    <button type="submit">Add Travel Entry</button>
+</form>
+
+<hr>
+
+<h3>Current Travel Entries</h3>
+{% if travel %}
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Days</th>
+        <th>Airfare</th>
+        <th>Per-Diem</th>
+        <th>Lodging</th>
+        <th>Total</th>
+        <th></th>
+    </tr>
+    {% for t in travel %}
+    <tr>
+        <td>{{ t.name }}</td>
+        <td>{{ t.type }}</td>
+        <td>{{ t.days }}</td>
+        <td>${{ "%.2f"|format(t.airfare) }}</td>
+        <td>${{ "%.2f"|format(t.per_diem) }}</td>
+        <td>${{ "%.2f"|format(t.lodging) }}</td>
+        <td>${{ "%.2f"|format(t.total) }}</td>
+        <td>
+            <form action="{{ url_for('budget.delete_travel', index=loop.index0) }}" method="POST">
+                <button>Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No travel added yet.</p>
+{% endif %}
+
+<br>
+<a href="{{ url_for('budget.final') }}">Continue to Final Step →</a>
+
+{% endblock %}

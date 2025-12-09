@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Edit Subaward</h2>
+
+<form method="post">
+    <label>Institution:</label>
+    <input type="text" name="institution" value="{{ subaward.institution }}" required><br>
+
+    <label>F&A Rate (%):</label>
+    <input type="number" name="fa_rate" step="0.01" value="{{ subaward.fa_rate }}" required><br>
+
+    <button type="submit">Save Changes</button>
+</form>
+
+<br>
+<a href="{{ url_for('budget.step2') }}">Back to Step 2</a>
+{% endblock %}

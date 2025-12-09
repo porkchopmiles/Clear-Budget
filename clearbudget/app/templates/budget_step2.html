@@ -68,7 +68,8 @@
             <td><input type="number" step="0.01" name="fte" value="{{ p.fte }}"></td>
             <td><input type="number" step="0.01" name="salary" value="{{ p.salary }}"></td>
             <td><input type="number" step="0.01" name="fringe" value="{{ p.fringe }}"></td>
-            <td><input type="number" step="0.01" name="tuition" value="{{ "%.2f"|format(p.get('tuition',0)) if p.get('type')=='Student' else 0 }}"></td>
+            
+            <td><input type="number" step="0.01" name="tuition" value="{{ "%.2f"|format(p.get('tuition',0)) if p.get('role')=='Student' else 0 }}"></td>
             <td><input type="text" name="residency" value="{{p.residency}}"></td>
             <td><input type="text" name="Semester" value="{{p.semester}}"></td>
             <td>
@@ -79,5 +80,115 @@
     {% endfor %}
 </table>
 
+
+<!-- Travel Form-->
+<h2>Travel</h2>
+<h3>Add Travel Entry</h3>
+
+<form method="post">
+    <input type="hidden" name="add_travel" value="1">
+
+    <label>Travel Type:</label>
+    <select name="travel_profile" required>
+        {% for t in travel_profiles %}
+            <option value="{{ t.profile_id }}">
+                {{ t.name }} ({{ t.type }})
+            </option>
+        {% endfor %}
+    </select><br>
+
+    <label>Number of Days:</label>
+    <input type="number" name="travel_days" min="1" required><br>
+
+    <button type="submit">Add Travel</button>
+</form>
+
+<h3>Current Travel Items</h3>
+
+{% if travel_list %}
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Days</th>
+        <th>Airfare</th>
+        <th>Per Diem</th>
+        <th>Lodging</th>
+        <th>Total</th>
+        <th>Action</th>
+    </tr>
+
+    {% for t in travel_list %}
+    <tr>
+        <td>{{ t.name }}</td>
+        <td>{{ t.type }}</td>
+        <td>{{ t.days }}</td>
+        <td>${{ "%.2f"|format(t.airfare) }}</td>
+        <td>${{ "%.2f"|format(t.per_diem) }}</td>
+        <td>${{ "%.2f"|format(t.lodging) }}</td>
+        <td><b>${{ "%.2f"|format(t.total) }}</b></td>
+        <td>
+            <form method="post" style="display:inline;">
+                <button type="submit" name="delete_travel" value="{{ loop.index0 }}"
+                        onclick="return confirm('Delete this travel item?');">
+                    Delete
+                </button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No travel added yet.</p>
+{% endif %}
+
+<!--Subawards form-->
+<h2>Subawards</h2>
+<h3>Add New Subaward</h3>
+<form method="post">
+    <input type="hidden" name="add_subaward" value="1">
+    
+    <label>Subrecipient Institution:</label>
+    <input type="text" name="institution" required><br>
+    
+    <label>F&A Rate (%):</label>
+    <input type="number" step="0.01" name="fa_rate" value="40"><br>
+
+    <button type="submit">Add Subaward</button>
+</form>
+
+<h3>Current Subawards</h3>
+{% if subawards %}
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Institution</th>
+        <th>F&A Rate (%)</th>
+        <th>Personnel Count</th>
+        <th>Travel Items</th>
+        <th>Actions</th>
+    </tr>
+    {% for s in subawards %}
+    <tr>
+        <td>{{ s.institution }}</td>
+        <td>{{ s.fa_rate }}</td>
+        <td>{{ s.personnel|length }}</td>
+        <td>{{ s.travel|length }}</td>
+        <td>
+            <form method="post" style="display:inline;">
+                <button type="submit" name="delete_subaward" value="{{ s.id }}"
+                        onclick="return confirm('Delete this subaward?');">
+                    Delete
+                </button>
+            </form>
+            <a href="{{ url_for('budget.edit_subaward', subaward_id=s.id) }}">Edit</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No subawards added yet.</p>
+{% endif %}
+
+<!--Next-->
 <a href="{{ url_for('budget.step3') }}">Next: Review Budget</a>
 {% endblock %}
