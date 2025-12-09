@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Edit Student/Postdoc</h2>
+<form action="{{ url_for('student.edit_student', student_id=student.student_id) }}" method="post">
+    <label>Name:</label>
+    <input type="text" name="name" value="{{ student.name }}" required><br>
+
+    <label>Role:</label>
+    <select name="role">
+        <option value="Student" {% if student.role=='Student' %}selected{% endif %}>Student</option>
+        <option value="Postdoc" {% if student.role=='Postdoc' %}selected{% endif %}>Postdoc</option>
+    </select><br>
+
+    <label>FTE:</label>
+    <input type="number" step="0.01" name="fte" value="{{ student.fte }}" required><br>
+
+    <label>Salary ($):</label>
+    <input type="number" step="0.01" name="salary" value="{{ student.salary }}" required><br>
+
+    <label>Tuition ($):</label>
+    <input type="number" step="0.01" name="tuition" value="{{ student.tuition }}"><br>
+
+    <button type="submit">Update</button>
+</form>
+<a href="{{ url_for('student.index') }}">Back to list</a>
+{% endblock %}

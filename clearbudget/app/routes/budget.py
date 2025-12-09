@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from ..db import get_db_connection
 import pandas as pd
 from flask import send_file
 import io
+from uuid import uuid4
+
 
 # Create Blueprint
 budget_bp = Blueprint('budget', __name__, template_folder='../templates')
@@ -44,49 +46,67 @@ def step1():
 # Step 2: Add Students / Postdocs
 # ----------------------------
 @budget_bp.route('/step2', methods=['GET', 'POST'])
+@budget_bp.route('/step2', methods=['GET', 'POST'])
 def step2():
-    if 'budget_personnel' not in session:
-        session['budget_personnel'] = []
+    # Get current personnel from session
+    selected_personnel = session.get('budget_personnel', [])
 
     if request.method == 'POST':
-        #--- General Fields --
-        name = request.form['name']
-        ptype = request.form['type']
-        fte = float(request.form['fte'])
-        salary = float(request.form['salary'])
-        fringe = float(request.form['fringe'])
-        
-        #---  Tuition fields ---
-        residency = request.form.get('residency', 'In-State')
-        semester = request.form.get('semester', 'Fall')
-        start_year = int(session.get('start_year', 2026))
-        
-        # Validate student FTE <= 50%
-        if ptype == 'Student' and fte > 50:
-            fte = 50
+
+        # ---------------- Add new personnel ----------------
+        if 'add_student' in request.form:
+            name = request.form['name']
+            role = request.form['role']
+            fte = float(request.form['fte'])
+            annual_salary = float(request.form['salary'])
+            fringe_rate = float(request.form['fringe'])
+            tuition = float(request.form.get('tuition', 0))
             
-        # Calculate tuition
-        tuition_amount = 0
-        if ptype == 'Student':
-            tuition_amount, projected_increase = get_tuition(residency, semester, start_year)
+            #---  Tuition fields ---
+            residency = request.form.get('residency', 'In-State')
+            semester = request.form.get('semester', 'Fall')
+            start_year = int(session.get('start_year', 2026))
+            # Validate student FTE <= 50%
+            if role == 'Student' and fte > 50:
+                fte = 50
+            # Calculate tuition
+            tuition_amount = 0
+            if role == 'Student':
+                tuition_amount, projected_increase = get_tuition(residency, semester, start_year)
+            
+            selected_personnel.append({
+                'id': str(uuid4()),  # unique ID
+                'name': name,
+                'role': role,
+                'fte': fte,
+                'salary': annual_salary,
+                'fringe': fringe_rate,
+                'residency': residency,
+                'semester': semester,
+                'tuition': tuition
+            })
+            session['budget_personnel'] = selected_personnel
+            flash(f"{role} added to budget.")
+            return redirect(url_for('budget.step2'))
 
-        # Add personnel to session
-        personnel = {
-            'name': name,
-            'type': ptype,
-            'fte': float(fte),
-            'salary': float(salary),
-            'fringe': float(fringe),
-            'residency': residency,
-            'semester': semester,
-            'tuition': tuition_amount
-        }
-        session['budget_personnel'].append(personnel)
-        session.modified = True  # Tell Flask session changed
+        # ---------------- Delete individual personnel ----------------
+        delete_id = request.form.get('delete_id')
+        if delete_id:
+            selected_personnel = [p for p in selected_personnel if p.get('id') != delete_id]
+            session['budget_personnel'] = selected_personnel
+            flash("Personnel removed from budget.")
+            return redirect(url_for('budget.step2'))
 
-        return redirect(url_for('budget.step2'))
 
-    return render_template('budget_step2.html')
+        # ---------------- Delete All ----------------
+        if 'delete_all' in request.form:
+            selected_personnel = []
+            session['budget_personnel'] = selected_personnel
+            flash("All personnel removed from budget.")
+            return redirect(url_for('budget.step2'))
+
+    return render_template('budget_step2.html', selected_personnel=selected_personnel)
+
 
 
 # Step 3: Review Budget
@@ -96,21 +116,26 @@ def step3():
 
     total_salary = 0.0
     total_fringe = 0.0
+    total_tuition = 0.0
 
     # Calculate totals in Python
     for p in personnel:
        salary = float(p.get('salary', 0))
        fringe = float(p.get('fringe', 0))
+       tuition = float(p.get('tuition', 0))
+       
        total_salary += salary
        total_fringe += salary * fringe / 100
+       total_tuition += tuition
 
-    grand_total = total_salary + total_fringe
+    grand_total = total_salary + total_fringe + tuition
 
     return render_template(
        'budget_step3.html',
        personnel=personnel,
        total_salary=total_salary,
        total_fringe=total_fringe,
+       total_tuition=total_tuition,
        grand_total=grand_total
     )
 
@@ -127,13 +152,14 @@ def export_excel():
     df = pd.DataFrame(personnel)
     # Calculate fringe as separate column
     df['Fringe ($)'] = df['salary'] * df['fringe'] / 100
-    df['Total ($)'] = df['salary'] + df['Fringe ($)']
+    df['Total ($)'] = df['salary'] + df['Fringe ($)'] + df['tuition']
     df.rename(columns={
         'name': 'Name',
         'type': 'Type',
         'fte': 'FTE (%)',
         'salary': 'Salary ($)',
-        'fringe': 'Fringe Rate (%)'
+        'fringe': 'Fringe Rate (%)',
+        'tuition': 'Tuition ($)'
     }, inplace=True)
 
     # Calculate totals
@@ -141,7 +167,9 @@ def export_excel():
         'Name': 'TOTAL',
         'Salary ($)': df['Salary ($)'].sum(),
         'Fringe ($)': df['Fringe ($)'].sum(),
+        'Tuition ($)': df['Tuition ($)'].sum(),
         'Total ($)': df['Total ($)'].sum()
+        
     }
 
     # Create a BytesIO buffer
@@ -155,7 +183,8 @@ def export_excel():
         worksheet.write(last_row, 0, totals['Name'])
         worksheet.write(last_row, 3, totals['Salary ($)'])
         worksheet.write(last_row, 4, totals['Fringe ($)'])
-        worksheet.write(last_row, 5, totals['Total ($)'])
+        worksheet.write(last_row, 5, totals['Tuition ($)'])
+        worksheet.write(last_row, 6, totals['Total ($)'])
 
     output.seek(0)
 
@@ -180,3 +209,10 @@ def get_tuition(student_type, semester, year):
         return result['tuition_amount'], result['projected_increase']
     else:
         return 0, 0  # default if not found
+    
+@budget_bp.route('/step2/clear', methods=['POST'])
+def clear_personnel():
+    session['budget_personnel'] = []
+    flash("All personnel removed from the budget.")
+    return redirect(url_for('budget.step2'))
+

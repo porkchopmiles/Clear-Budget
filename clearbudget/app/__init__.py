@@ -8,8 +8,11 @@ def create_app():
     # Register Blueprints
     from .routes.faculty import faculty_bp
     from .routes.budget import budget_bp
+    from .routes.student import student_bp
+    
     app.register_blueprint(faculty_bp, url_prefix='/faculty')
     app.register_blueprint(budget_bp, url_prefix='/budget')
+    app.register_blueprint(student_bp, url_prefix='/students')
 
     # Home route
     @app.route('/')

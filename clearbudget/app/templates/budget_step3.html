@@ -14,20 +14,23 @@
         <th>FTE (%)</th>
         <th>Salary ($)</th>
         <th>Fringe ($)</th>
+        <th>Tuition ($)</th>
     </tr>
     {% for p in personnel %}
     <tr>
         <td>{{ p.name }}</td>
-        <td>{{ p.type }}</td>
+        <td>{{ p.role }}</td>
         <td>{{ p.fte }}</td>
-        <td>{{ "%.2f"|format(p.salary) }}</td>
-        <td>{{ "%.2f"|format(p.salary * p.fringe / 100) }}</td>
+        <td>{{ "%.2f"|format(p.get('salary',69) )}}</td>
+        <td>{{ "%.2f"|format(p.get('salary', 69) * p.get('fringe',0) / 100)}}</td>
+        <td>{{ "%.2f"|format(p.get('tuition',0)) if p.get('type')=='Student' else 0 }}</td>
     </tr>
     {% endfor %}
 </table>
 
 <h4>Total Salary: ${{ "%.2f"|format(total_salary) }}</h4>
 <h4>Total Fringe: ${{ "%.2f"|format(total_fringe) }}</h4>
+<h4>Total Tuition: ${{ "%.2f"|format(total_tuition) }}</h4>
 <h4>Grand Total: ${{ "%.2f"|format(grand_total) }}</h4>
 
 {% else %}
