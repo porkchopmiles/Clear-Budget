@@ -65,7 +65,31 @@
 
 <h4>F&A Overhead ({{ fa_rate }}%): ${{ "%.2f"|format(fa_cost) }}</h4>
 
-<h3>Grand Total (Direct Costs + F&A): ${{ "%.2f"|format(grand_total) }}</h3>
+<h4>Direct costs: ${{"%.2f"|format(prime_total)}}</h4>
+
+<h3>Subawards Summary</h3>
+{% if subaward_totals %}
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Institution</th>
+        <th>Direct Costs ($)</th>
+        <th>F&A ($)</th>
+        <th>Total ($)</th>
+    </tr>
+    {% for sa in subaward_totals %}
+    <tr>
+        <td>{{ sa.institution }}</td>
+        <td>{{ "%.2f"|format(sa.direct) }}</td>
+        <td>{{ "%.2f"|format(sa.fa) }}</td>
+        <td>{{ "%.2f"|format(sa.total) }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No subawards added.</p>
+{% endif %}
+
+<h3>Grand Total (Direct Costs + F&A + Subawards): ${{ "%.2f"|format(grand_total) }}</h3>
 
 
 {% else %}

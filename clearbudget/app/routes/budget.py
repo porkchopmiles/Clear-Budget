@@ -51,6 +51,17 @@ def step2():
     selected_personnel = session.get('budget_personnel', [])
     travel_list = session.get('budget_travel', [])
     subawards = session.get('budget_subawards', [])
+    
+    for sa in subawards:
+        personnel = sa.get("personnel", [])
+        travel = sa.get("travel", [])
+
+        sa_total_salary = sum(float(p.get("salary", 0)) for p in personnel)
+        sa_total_fringe = sum(float(p.get("salary", 0)) * float(p.get("fringe", 0)) / 100 for p in personnel)
+        sa_total_tuition = sum(float(p.get("tuition", 0)) for p in personnel)
+        sa_total_travel = sum(float(t.get("total", 0)) for t in travel)
+
+        sa["sub_total"] = sa_total_salary + sa_total_fringe + sa_total_tuition + sa_total_travel
 
     if request.method == 'POST':
 
@@ -210,7 +221,7 @@ def step2():
         subawards=subawards
     )
 
-@budget_bp.route('/step2/subaward/<subaward_id>/edit', methods=['GET', 'POST'])
+@budget_bp.route('/edit_subaward/<subaward_id>', methods=['GET', 'POST'])
 def edit_subaward(subaward_id):
     # Get subawards from session
     subawards = session.get('budget_subawards', [])
@@ -219,16 +230,121 @@ def edit_subaward(subaward_id):
     if not subaward:
         flash("Subaward not found.", "error")
         return redirect(url_for('budget.step2'))
+    
+    # Initialize personnel and travel lists if missing
+    if 'personnel' not in subaward:
+        subaward['personnel'] = []
+    if 'travel' not in subaward:
+        subaward['travel'] = []
 
     if request.method == 'POST':
-        # Update subaward info
-        subaward['institution'] = request.form.get('institution', subaward['institution'])
-        subaward['fa_rate'] = float(request.form.get('fa_rate', subaward['fa_rate']))
 
-        # Save back to session
-        session['budget_subawards'] = subawards
-        flash(f"Subaward for {subaward['institution']} updated.")
-        return redirect(url_for('budget.step2'))
+        # ---------- Update general subaward info ----------
+        if 'update_subaward' in request.form:
+            subaward['institution'] = request.form.get('institution', subaward['institution'])
+            subaward['fa_rate'] = float(request.form.get('fa_rate', subaward['fa_rate']))
+            session['budget_subawards'] = subawards
+            flash(f"Subaward for {subaward['institution']} updated.")
+            return redirect(url_for('budget.step2'))
+
+        # ---------- Add Personnel ----------
+        if 'add_students' in request.form:
+            name = request.form['name']
+            role = request.form['role']
+            fte = float(request.form['fte'])
+            annual_salary = float(request.form['salary'])
+            fringe_rate = float(request.form['fringe'])
+            tuition = float(request.form.get('tuition', 0))
+
+            residency = request.form.get('residency', 'In-State')
+            semester = request.form.get('semester', 'Fall')
+            start_year = int(session.get('start_year', 2026))
+
+            if role == 'Student' and fte > 50:
+                fte = 50
+
+            subaward['personnel'].append({
+                'id': str(uuid4()),
+                'name': name,
+                'role': role,
+                'fte': fte,
+                'salary': annual_salary,
+                'fringe': fringe_rate,
+                'residency': residency,
+                'semester': semester,
+                'tuition': tuition
+            })
+
+            session['budget_subawards'] = subawards
+            flash(f"{role} added to subaward.")
+            return redirect(url_for('budget.edit_subaward', subaward_id=subaward_id))
+
+        # ---------- Delete Personnel ----------
+        if 'delete_id' in request.form:
+            delete_id = request.form['delete_id']
+            subaward['personnel'] = [
+                p for p in subaward['personnel'] if p['id'] != delete_id
+            ]
+            session['budget_subawards'] = subawards
+            flash("Personnel removed from subaward.")
+            return redirect(url_for('budget.edit_subaward', subaward_id=subaward_id))
+
+        # ---------- Add Travel ----------
+        if 'add_travel' in request.form:
+            profile_id = request.form.get('travel_profile')
+            days = int(request.form.get('travel_days', 1))
+
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM travel_profiles WHERE profile_id = %s", (profile_id,))
+            profile = cursor.fetchone()
+            cursor.close()
+
+            if not profile:
+                flash("Invalid travel profile.", "error")
+                return redirect(url_for('budget.edit_subaward', subaward_id=subaward_id))
+
+            subaward['travel'].append({
+                'profile_id': profile['profile_id'],
+                'name': profile["name"],
+                'type': profile["type"],
+                'days': days,
+                'airfare': float(profile["airfare"]),
+                'per_diem': float(profile["per_diem"]),
+                'lodging': float(profile["lodging_cap"]),
+                'total': float(profile['airfare']) +
+                         float(profile['per_diem']) * days +
+                         float(profile['lodging_cap']) * days
+            })
+
+            session['budget_subawards'] = subawards
+            flash("Travel added to subaward.")
+            return redirect(url_for('budget.edit_subaward', subaward_id=subaward_id))
+
+        # ---------- Delete Travel ----------
+        if 'delete_travel' in request.form:
+            index = int(request.form['delete_travel'])
+            if 0 <= index < len(subaward['travel']):
+                subaward['travel'].pop(index)
+                session['budget_subawards'] = subawards
+                flash("Travel removed from subaward.")
+            return redirect(url_for('budget.edit_subaward', subaward_id=subaward_id))
+
+    # GET request: load travel profiles
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT profile_id, name, type, airfare, per_diem, lodging_cap FROM travel_profiles")
+    travel_profiles = cursor.fetchall()
+    cursor.close()
+
+    return render_template(
+        'edit_subaward.html',
+        subaward=subaward,
+        travel_profiles=travel_profiles
+    )
+
+
+
 
     return render_template('edit_subaward.html', subaward=subaward)
 
@@ -306,16 +422,19 @@ def delete_travel(index):
 def export_excel():
     
     personnel = session.get('budget_personnel', [])
+    travel_list = session.get('budget_travel', [])
+    subawards = session.get('budget_subawards', [])
+    
+    if not personnel and not travel_list and not subawards:
+        return "No budget data to export."
 
-    if not personnel:
-        return "No personnel to export."
-
+    # Personnel
     # Create DataFrame
-    df = pd.DataFrame(personnel)
+    df_personnel = pd.DataFrame(personnel)
     # Calculate fringe as separate column
-    df['Fringe ($)'] = df['salary'] * df['fringe'] / 100
-    df['Total ($)'] = df['salary'] + df['Fringe ($)'] + df['tuition']
-    df.rename(columns={
+    df_personnel['Fringe ($)'] = df_personnel['salary'] * df_personnel['fringe'] / 100
+    df_personnel['Total ($)'] = df_personnel['salary'] + df_personnel['Fringe ($)'] + df_personnel['tuition']
+    df_personnel.rename(columns={
         'name': 'Name',
         'type': 'Type',
         'fte': 'FTE (%)',
@@ -325,33 +444,149 @@ def export_excel():
     }, inplace=True)
 
     # Calculate totals
-    totals = {
+    totals_personnel = {
         'Name': 'TOTAL',
-        'Salary ($)': df['Salary ($)'].sum(),
-        'Fringe ($)': df['Fringe ($)'].sum(),
-        'Tuition ($)': df['Tuition ($)'].sum(),
-        'Total ($)': df['Total ($)'].sum()
+        'Salary ($)': df_personnel['Salary ($)'].sum(),
+        'Fringe ($)': df_personnel['Fringe ($)'].sum(),
+        'Tuition ($)': df_personnel['Tuition ($)'].sum(),
+        'Total ($)': df_personnel['Total ($)'].sum()
         
     }
+
+
+
+    # Travel sheet
+    if travel_list:
+        df_travel = pd.DataFrame(travel_list)
+        df_travel.rename(columns={
+            'name': 'Profile Name',
+            'type': 'Type',
+            'days': 'Days',
+            'airfare': 'Airfare ($)',
+            'per_diem': 'Per Diem ($)',
+            'lodging': 'Lodging ($)',
+            'total': 'Total ($)'
+        }, inplace=True)
+
+        # Totals
+        totals_travel = {
+            'Profile Name': 'TOTAL',
+            'Days': df_travel['Days'].sum(),
+            'Airfare ($)': df_travel['Airfare ($)'].sum(),
+            'Per Diem ($)': df_travel['Per Diem ($)'].sum(),
+            'Lodging ($)': df_travel['Lodging ($)'].sum(),
+            'Total ($)': df_travel['Total ($)'].sum()
+        }
+        
+    # Subawards
+    subaward_rows = []
+    for s in subawards:
+        s_personnel = s.get('personnel', [])
+        s_travel = s.get('travel', [])
+        s_salary = sum(float(p.get('salary',0)) for p in s_personnel)
+        s_fringe = sum(float(p.get('salary',0)) * float(p.get('fringe',0))/100 for p in s_personnel)
+        s_travel_total = sum(float(t.get('total',0)) for t in s_travel)
+        s_direct = s_salary + s_fringe + s_travel_total
+        s_fa = s_direct * s.get('fa_rate',40)/100
+        s_total = s_direct + s_fa
+
+        subaward_rows.append({
+            'Institution': s['institution'],
+            'Direct Costs ($)': s_direct,
+            'F&A ($)': s_fa,
+            'Total ($)': s_total
+        })
+
+    df_subawards = pd.DataFrame(subaward_rows)
+    totals_subawards = {
+        'Institution': 'TOTAL',
+        'Direct Costs ($)': df_subawards['Direct Costs ($)'].sum() if not df_subawards.empty else 0,
+        'F&A ($)': df_subawards['F&A ($)'].sum() if not df_subawards.empty else 0,
+        'Total ($)': df_subawards['Total ($)'].sum() if not df_subawards.empty else 0
+    }
+
 
     # Create a BytesIO buffer
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Personnel')
-        # Add totals row at the bottom
-        workbook  = writer.book
-        worksheet = writer.sheets['Personnel']
-        last_row = len(df) + 1
-        worksheet.write(last_row, 0, totals['Name'])
-        worksheet.write(last_row, 3, totals['Salary ($)'])
-        worksheet.write(last_row, 4, totals['Fringe ($)'])
-        worksheet.write(last_row, 5, totals['Tuition ($)'])
-        worksheet.write(last_row, 6, totals['Total ($)'])
+        # Personnel
+        if personnel:
+            df_personnel.to_excel(writer, index=False, sheet_name='Personnel')
+            worksheet = writer.sheets['Personnel']
+            last_row = len(df_personnel) + 1
+            worksheet.write(last_row, 0, totals_personnel['Name'])
+            worksheet.write(last_row, 3, totals_personnel['Salary ($)'])
+            worksheet.write(last_row, 4, totals_personnel['Fringe ($)'])
+            worksheet.write(last_row, 5, totals_personnel['Tuition ($)'])
+            worksheet.write(last_row, 6, totals_personnel['Total ($)'])
+            
+            # Auto-adjust column widths
+            for i, col in enumerate(df_personnel.columns):
+                max_len = max(df_personnel[col].astype(str).map(len).max(), len(col)) + 2
+                worksheet.set_column(i, i, max_len)
+
+        # Travel
+        if travel_list:
+            df_travel.to_excel(writer, index=False, sheet_name='Travel')
+            worksheet = writer.sheets['Travel']
+            last_row = len(df_travel) + 1
+            worksheet.write(last_row, 0, totals_travel['Profile Name'])
+            worksheet.write(last_row, 2, totals_travel['Days'])
+            worksheet.write(last_row, 3, totals_travel['Airfare ($)'])
+            worksheet.write(last_row, 4, totals_travel['Per Diem ($)'])
+            worksheet.write(last_row, 5, totals_travel['Lodging ($)'])
+            worksheet.write(last_row, 6, totals_travel['Total ($)'])
+
+            # Auto-adjust column widths
+            for i, col in enumerate(df_travel.columns):
+                max_len = max(df_travel[col].astype(str).map(len).max(), len(col)) + 2
+                worksheet.set_column(i, i, max_len)
+                
+        # Subawards
+        if subawards:
+            df_subawards.to_excel(writer, index=False, sheet_name='Subawards')
+            worksheet = writer.sheets['Subawards']
+            last_row = len(df_subawards) + 1
+            worksheet.write(last_row, 0, totals_subawards['Institution'])
+            worksheet.write(last_row, 1, totals_subawards['Direct Costs ($)'])
+            worksheet.write(last_row, 2, totals_subawards['F&A ($)'])
+            worksheet.write(last_row, 3, totals_subawards['Total ($)'])
+
+            # Auto-adjust column widths
+            for i, col in enumerate(df_subawards.columns):
+                max_len = max(df_subawards[col].astype(str).map(len).max(), len(col)) + 2
+                worksheet.set_column(i, i, max_len)
+
+
+        # Grandtotal
+        grand_total_df = pd.DataFrame([{
+           'Category': 'Personnel',
+           'Total ($)': totals_personnel['Total ($)'] if personnel else 0
+        }, {
+           'Category': 'Travel',
+           'Total ($)': totals_travel['Total ($)'] if travel_list else 0
+        }, {
+           'Category': 'Subawards',
+           'Total ($)': totals_subawards['Total ($)'] if subawards else 0
+        }])
+
+        grand_total_df.loc[len(grand_total_df)] = {
+           'Category': 'GRAND TOTAL',
+           'Total ($)': grand_total_df['Total ($)'].sum()
+        }
+
+        grand_total_df.to_excel(writer, index=False, sheet_name='Grand Total')
+
+        # Auto-adjust column widths
+        for i, col in enumerate(grand_total_df.columns):
+            max_len = max(grand_total_df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.set_column(i, i, max_len)
+        
 
     output.seek(0)
 
     return send_file(output,
-                     download_name='budget.xlsx',
+                     download_name='Clear_budget.xlsx',
                      as_attachment=True,
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 

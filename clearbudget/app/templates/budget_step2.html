@@ -165,6 +165,7 @@
         <th>F&A Rate (%)</th>
         <th>Personnel Count</th>
         <th>Travel Items</th>
+        <th>Subaward Total</th>
         <th>Actions</th>
     </tr>
     {% for s in subawards %}
@@ -173,6 +174,7 @@
         <td>{{ s.fa_rate }}</td>
         <td>{{ s.personnel|length }}</td>
         <td>{{ s.travel|length }}</td>
+        <td>{{"%.2f"|format(s.sub_total)}}</td>
         <td>
             <form method="post" style="display:inline;">
                 <button type="submit" name="delete_subaward" value="{{ s.id }}"
@@ -188,7 +190,9 @@
 {% else %}
 <p>No subawards added yet.</p>
 {% endif %}
-
+<p> </p>
 <!--Next-->
-<a href="{{ url_for('budget.step3') }}">Next: Review Budget</a>
+<form action="{{ url_for('budget.step3') }}">
+    <button type="submit">Next: Review Budget</button>
+</form>
 {% endblock %}

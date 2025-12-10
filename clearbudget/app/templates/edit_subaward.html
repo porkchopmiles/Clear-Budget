@@ -1,17 +1,119 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Edit Subaward</h2>
+<h2>Edit Subaward: {{ subaward.institution }}</h2>
 
+<!-- Update Subaward Info -->
 <form method="post">
+    <input type="hidden" name="update_subaward" value="1">
     <label>Institution:</label>
     <input type="text" name="institution" value="{{ subaward.institution }}" required><br>
-
     <label>F&A Rate (%):</label>
-    <input type="number" name="fa_rate" step="0.01" value="{{ subaward.fa_rate }}" required><br>
-
-    <button type="submit">Save Changes</button>
+    <input type="number" step="0.01" name="fa_rate" value="{{ subaward.fa_rate }}" required><br>
+    <button type="submit">Update Subaward Info</button>
 </form>
+
+<hr>
+
+<!-- Add Personnel -->
+<h3>Add Personnel</h3>
+<form method="post">
+    <input type="hidden" name="add_students" value="1">
+    <label>Name:</label><input type="text" name="name" required><br>
+    <label>Role:</label>
+    <select name="role">
+        <option value="Student">Student</option>
+        <option value="Postdoc">Postdoc</option>
+    </select><br>
+    <label>FTE:</label><input type="number" step="0.01" name="fte" required><br>
+    <label>Salary:</label><input type="number" step="0.01" name="salary" required><br>
+    <label>Fringe:</label><input type="number" step="0.01" name="fringe" required><br>
+    <label>Tuition:</label><input type="number" step="0.01" name="tuition"><br>
+    <label>Residency:</label>
+    <select name="residency">
+        <option value="In-State">In-State</option>
+        <option value="Out-of-State">Out-of-State</option>
+    </select><br>
+    <label>Semester:</label>
+    <select name="semester">
+        <option value="Fall">Fall</option>
+        <option value="Spring">Spring</option>
+        <option value="Summer">Summer</option>
+    </select><br>
+    <button type="submit">Add Personnel</button>
+</form>
+
+<h3>Current Personnel</h3>
+{% if subaward.personnel %}
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Name</th><th>Role</th><th>FTE</th><th>Salary</th><th>Fringe</th><th>Tuition</th><th>Actions</th>
+    </tr>
+    {% for p in subaward.personnel %}
+    <tr>
+        <td>{{ p.name }}</td>
+        <td>{{ p.role }}</td>
+        <td>{{ p.fte }}</td>
+        <td>{{ "%.2f"|format(p.salary) }}</td>
+        <td>{{ "%.2f"|format(p.salary * p.fringe / 100) }}</td>
+        <td>{{ "%.2f"|format(p.tuition) }}</td>
+        <td>
+            <form method="post">
+                <button type="submit" name="delete_id" value="{{ p.id }}"
+                        onclick="return confirm('Delete this personnel?');">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No personnel added yet.</p>
+{% endif %}
+
+<hr>
+
+<!-- Add Travel -->
+<h3>Add Travel</h3>
+<form method="post">
+    <input type="hidden" name="add_travel" value="1">
+    <label>Travel Type:</label>
+    <select name="travel_profile">
+        {% for t in travel_profiles %}
+        <option value="{{ t.profile_id }}">{{ t.name }} ({{ t.type }})</option>
+        {% endfor %}
+    </select><br>
+    <label>Days:</label>
+    <input type="number" name="travel_days" min="1" value="1"><br>
+    <button type="submit">Add Travel</button>
+</form>
+
+<h3>Current Travel</h3>
+{% if subaward.travel %}
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Name</th><th>Type</th><th>Days</th><th>Airfare</th><th>Per Diem</th><th>Lodging</th><th>Total</th><th>Actions</th>
+    </tr>
+    {% for t in subaward.travel %}
+    <tr>
+        <td>{{ t.name }}</td>
+        <td>{{ t.type }}</td>
+        <td>{{ t.days }}</td>
+        <td>{{ "%.2f"|format(t.airfare) }}</td>
+        <td>{{ "%.2f"|format(t.per_diem) }}</td>
+        <td>{{ "%.2f"|format(t.lodging) }}</td>
+        <td>{{ "%.2f"|format(t.total) }}</td>
+        <td>
+            <form method="post">
+                <button type="submit" name="delete_travel" value="{{ loop.index0 }}"
+                        onclick="return confirm('Delete this travel?');">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No travel added yet.</p>
+{% endif %}
 
 <br>
 <a href="{{ url_for('budget.step2') }}">Back to Step 2</a>
