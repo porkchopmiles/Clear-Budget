@@ -1,198 +1,270 @@
 {% extends 'base.html' %}
 
+{% block title %}Budget Wizard - Step 2 - Clear Budget{% endblock %}
+
 {% block content %}
-<h2>Budget Wizard - Step 2: Add Students & Postdocs</h2>
+<div class="wizard-steps">
+    <div class="step">
+        1. Project Info
+    </div>
+    <div class="step active">
+        <strong>2. Personnel & Travel</strong>
+    </div>
+    <div class="step">
+        3. Review
+    </div>
+</div>
 
-<h3>Add New Student/Postdoc</h3>
-<form method="post">
-    <input type="hidden" name="add_student" value="1">
-    <label>Name:</label>
-    <input type="text" name="name" required><br>
+<h2>Budget Wizard - Step 2</h2>
+<p class="text-muted mb-3">Add personnel, travel, and subawards to your budget.</p>
 
-    <label>Role:</label>
-    <select name="role">
-        <option value="Student">Student</option>
-        <option value="Postdoc">Postdoc</option>
-    </select><br>
+<!-- Personnel Section -->
+<div class="card">
+    <h3>Add Student or Postdoc</h3>
+    <form method="post">
+        <input type="hidden" name="add_student" value="1">
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" placeholder="John Doe" required>
+            </div>
 
-    <label>Effort (FTE):</label>
-    <input type="number" step="0.01" name="fte" required><br>
+            <div class="form-group">
+                <label for="role">Role</label>
+                <select name="role" id="role">
+                    <option value="Student">Graduate Student</option>
+                    <option value="Postdoc">Postdoctoral Researcher</option>
+                </select>
+            </div>
 
-    <label>Annual Salary/Stipend ($):</label>
-    <input type="number" step="0.01" name="salary" required><br>
+            <div class="form-group">
+                <label for="fte">Effort (FTE)</label>
+                <input type="number" id="fte" step="0.01" name="fte" placeholder="1.00" min="0" max="1" required>
+            </div>
 
-    <label for="fringe">Fringe Rate (%):</label>
-    <input type="number" name="fringe" id="fringe" step="0.01" required>
-    
-    <label for="residency">Residency:</label>
-    <select name="residency" id="residency" required>
-        <option value="In-State">In-State</option>
-        <option value="Out-of-State">Out-of-State</option>
-    </select>
-    
-    <label for="semester">Semester:</label>
-    <select name="semester" id="semester" required>
-        <option value="Fall">Fall</option>
-        <option value="Spring">Spring</option>
-        <option value="Summer">Summer</option>
-    </select>
+            <div class="form-group">
+                <label for="salary">Annual Salary/Stipend ($)</label>
+                <input type="number" id="salary" step="0.01" name="salary" placeholder="35000.00" required>
+            </div>
 
-    <button type="submit">Add</button>
-</form>
-
-<h3>Current Personnel in Budget</h3>
-<form method="post">
-    <button type="submit" name="delete_all" onclick="return confirm('Delete all personnel?');">Delete All</button>
-</form>
-
-<table border="1" cellpadding="5">
-    <tr>
-        <th>Name</th>
-        <th>Role</th>
-        <th>FTE</th>
-        <th>Salary</th>
-        <th>Fringe</th>
-        <th>Tuition</th>
-        <th>Residency</th>
-        <th>Semester</th>
-        <th>Actions</th>
-    
-    </tr>
-
-    {% for p in selected_personnel %}
-    <tr>
-        <form method="post">
-            <input type="hidden" name="edit_id" value="{{ p.id }}">
-            <td><input type="text" name="name" value="{{ p.name }}"></td>
-            <td><input type="text" name="role" value="{{ p.role }}"></td>
-            <td><input type="number" step="0.01" name="fte" value="{{ p.fte }}"></td>
-            <td><input type="number" step="0.01" name="salary" value="{{ p.salary }}"></td>
-            <td><input type="number" step="0.01" name="fringe" value="{{ p.fringe }}"></td>
+            <div class="form-group">
+                <label for="fringe">Fringe Rate (%)</label>
+                <input type="number" id="fringe" name="fringe" step="0.01" placeholder="3.00" required>
+            </div>
             
-            <td><input type="number" step="0.01" name="tuition" value="{{ "%.2f"|format(p.get('tuition',0)) if p.get('role')=='Student' else 0 }}"></td>
-            <td><input type="text" name="residency" value="{{p.residency}}"></td>
-            <td><input type="text" name="Semester" value="{{p.semester}}"></td>
-            <td>
-                <button type="submit" name="delete_id" value="{{ p.id }}" onclick="return confirm('Delete this personnel?');">Delete</button>
-            </td>
-        </form>
-    </tr>
-    {% endfor %}
-</table>
+            <div class="form-group">
+                <label for="residency">Residency Status</label>
+                <select name="residency" id="residency" required>
+                    <option value="In-State">In-State</option>
+                    <option value="Out-of-State">Out-of-State</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="semester">Semester</label>
+                <select name="semester" id="semester" required>
+                    <option value="Fall">Fall</option>
+                    <option value="Spring">Spring</option>
+                    <option value="Summer">Summer</option>
+                </select>
+            </div>
+        </div>
 
+        <button type="submit" class="btn-primary">+ Add Personnel</button>
+    </form>
+</div>
 
-<!-- Travel Form-->
-<h2>Travel</h2>
-<h3>Add Travel Entry</h3>
+<!-- Personnel List -->
+<h3>Current Personnel in Budget</h3>
 
-<form method="post">
-    <input type="hidden" name="add_travel" value="1">
+{% if selected_personnel %}
+<div class="mb-2">
+    <form method="post" style="display:inline;">
+        <button type="submit" name="delete_all" class="btn-danger">Delete All Personnel</button>
+    </form>
+</div>
 
-    <label>Travel Type:</label>
-    <select name="travel_profile" required>
-        {% for t in travel_profiles %}
-            <option value="{{ t.profile_id }}">
-                {{ t.name }} ({{ t.type }})
-            </option>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Role</th>
+            <th>FTE</th>
+            <th>Salary</th>
+            <th>Fringe</th>
+            <th>Tuition</th>
+            <th>Residency</th>
+            <th>Semester</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in selected_personnel %}
+        <tr>
+            <form method="post">
+                <input type="hidden" name="edit_id" value="{{ p.id }}">
+                <td><input type="text" name="name" value="{{ p.name }}"></td>
+                <td><input type="text" name="role" value="{{ p.role }}"></td>
+                <td><input type="number" step="0.01" name="fte" value="{{ p.fte }}"></td>
+                <td><input type="number" step="0.01" name="salary" value="{{ p.salary }}"></td>
+                <td><input type="number" step="0.01" name="fringe" value="{{ p.fringe }}"></td>
+                <td><input type="number" step="0.01" name="tuition" value="{{ "%.2f"|format(p.get('tuition',0)) if p.get('role')=='Student' else 0 }}"></td>
+                <td><input type="text" name="residency" value="{{p.residency}}"></td>
+                <td><input type="text" name="Semester" value="{{p.semester}}"></td>
+                <td>
+                    <button type="submit" name="delete_id" value="{{ p.id }}" class="btn-danger" style="font-size: 0.875rem;">Delete</button>
+                </td>
+            </form>
+        </tr>
         {% endfor %}
-    </select><br>
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>No personnel added yet.</p>
+</div>
+{% endif %}
 
-    <label>Number of Days:</label>
-    <input type="number" name="travel_days" min="1" required><br>
+<!-- Travel Section -->
+<div class="card mt-3">
+    <h3>✈️ Add Travel Entry</h3>
+    <form method="post">
+        <input type="hidden" name="add_travel" value="1">
 
-    <button type="submit">Add Travel</button>
-</form>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="travel_profile">Travel Profile</label>
+                <select name="travel_profile" id="travel_profile" required>
+                    <option value="" disabled selected>Select a travel profile...</option>
+                    {% for t in travel_profiles %}
+                        <option value="{{ t.profile_id }}">
+                            {{ t.name }} ({{ t.type }}) - Airfare: ${{ "%.2f"|format(t.airfare) }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="travel_days">Number of Days</label>
+                <input type="number" id="travel_days" name="travel_days" min="1" value="3" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-primary">+ Add Travel</button>
+    </form>
+</div>
 
 <h3>Current Travel Items</h3>
 
 {% if travel_list %}
-<table border="1" cellpadding="5">
-    <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Days</th>
-        <th>Airfare</th>
-        <th>Per Diem</th>
-        <th>Lodging</th>
-        <th>Total</th>
-        <th>Action</th>
-    </tr>
-
-    {% for t in travel_list %}
-    <tr>
-        <td>{{ t.name }}</td>
-        <td>{{ t.type }}</td>
-        <td>{{ t.days }}</td>
-        <td>${{ "%.2f"|format(t.airfare) }}</td>
-        <td>${{ "%.2f"|format(t.per_diem) }}</td>
-        <td>${{ "%.2f"|format(t.lodging) }}</td>
-        <td><b>${{ "%.2f"|format(t.total) }}</b></td>
-        <td>
-            <form method="post" style="display:inline;">
-                <button type="submit" name="delete_travel" value="{{ loop.index0 }}"
-                        onclick="return confirm('Delete this travel item?');">
-                    Delete
-                </button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
+<table>
+    <thead>
+        <tr>
+            <th>Conference/Event</th>
+            <th>Type</th>
+            <th>Days</th>
+            <th>Airfare</th>
+            <th>Per Diem</th>
+            <th>Lodging</th>
+            <th>Total</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in travel_list %}
+        <tr>
+            <td><strong>{{ t.name }}</strong></td>
+            <td>{{ t.type }}</td>
+            <td>{{ t.days }}</td>
+            <td>${{ "%.2f"|format(t.airfare) }}</td>
+            <td>${{ "%.2f"|format(t.per_diem) }}</td>
+            <td>${{ "%.2f"|format(t.lodging) }}</td>
+            <td><strong>${{ "%.2f"|format(t.total) }}</strong></td>
+            <td>
+                <form method="post">
+                    <button type="submit" name="delete_travel" value="{{ loop.index0 }}" class="btn-danger" style="font-size: 0.875rem;">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
 {% else %}
-<p>No travel added yet.</p>
+<div class="empty-state">
+    <p>No travel items added yet.</p>
+</div>
 {% endif %}
 
-<!--Subawards form-->
-<h2>Subawards</h2>
-<h3>Add New Subaward</h3>
-<form method="post">
-    <input type="hidden" name="add_subaward" value="1">
-    
-    <label>Subrecipient Institution:</label>
-    <input type="text" name="institution" required><br>
-    
-    <label>F&A Rate (%):</label>
-    <input type="number" step="0.01" name="fa_rate" value="40"><br>
+<!-- Subawards Section -->
+<div class="card mt-3">
+    <h3>Add Subaward</h3>
+    <form method="post">
+        <input type="hidden" name="add_subaward" value="1">
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="institution">Subrecipient Institution</label>
+                <input type="text" id="institution" name="institution" placeholder="Partner University" required>
+            </div>
 
-    <button type="submit">Add Subaward</button>
-</form>
+            <div class="form-group">
+                <label for="fa_rate">F&A Rate (%)</label>
+                <input type="number" id="fa_rate" step="0.01" name="fa_rate" value="40" placeholder="40.00">
+            </div>
+        </div>
+
+        <button type="submit" class="btn-primary">+ Add Subaward</button>
+    </form>
+</div>
 
 <h3>Current Subawards</h3>
+
 {% if subawards %}
-<table border="1" cellpadding="5">
-    <tr>
-        <th>Institution</th>
-        <th>F&A Rate (%)</th>
-        <th>Personnel Count</th>
-        <th>Travel Items</th>
-        <th>Subaward Total</th>
-        <th>Actions</th>
-    </tr>
-    {% for s in subawards %}
-    <tr>
-        <td>{{ s.institution }}</td>
-        <td>{{ s.fa_rate }}</td>
-        <td>{{ s.personnel|length }}</td>
-        <td>{{ s.travel|length }}</td>
-        <td>{{"%.2f"|format(s.sub_total)}}</td>
-        <td>
-            <form method="post" style="display:inline;">
-                <button type="submit" name="delete_subaward" value="{{ s.id }}"
-                        onclick="return confirm('Delete this subaward?');">
-                    Delete
-                </button>
-            </form>
-            <a href="{{ url_for('budget.edit_subaward', subaward_id=s.id) }}">Edit</a>
-        </td>
-    </tr>
-    {% endfor %}
+<table>
+    <thead>
+        <tr>
+            <th>Institution</th>
+            <th>F&A Rate</th>
+            <th>Personnel</th>
+            <th>Travel Items</th>
+            <th>Subaward Total</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for s in subawards %}
+        <tr>
+            <td><strong>{{ s.institution }}</strong></td>
+            <td>{{ s.fa_rate }}%</td>
+            <td>{{ s.personnel|length }} person(s)</td>
+            <td>{{ s.travel|length }} item(s)</td>
+            <td><strong>${{"%.2f"|format(s.sub_total)}}</strong></td>
+            <td>
+                <div class="actions">
+                    <a href="{{ url_for('budget.edit_subaward', subaward_id=s.id) }}" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Edit</a>
+                    <form method="post">
+                        <button type="submit" name="delete_subaward" value="{{ s.id }}" class="btn-danger">Delete</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
 {% else %}
-<p>No subawards added yet.</p>
+<div class="empty-state">
+    <p>No subawards added yet.</p>
+</div>
 {% endif %}
-<p> </p>
-<!--Next-->
-<form action="{{ url_for('budget.step3') }}">
-    <button type="submit">Next: Review Budget</button>
-</form>
+
+<!-- Navigation -->
+<div class="mt-3" style="padding: 1.5rem; background: var(--surface); border-radius: 0.75rem; text-align: center;">
+    <form action="{{ url_for('budget.step3') }}">
+        <button type="submit" class="btn-primary" style="font-size: 1.125rem; padding: 1rem 2rem;">
+            Next: Review Budget →
+        </button>
+    </form>
+</div>
+
 {% endblock %}

@@ -1,27 +1,56 @@
 {% extends 'base.html' %}
 
-{% block title %}Budget Wizard - Step 1{% endblock %}
+{% block title %}Budget Wizard - Step 1 - Clear Budget{% endblock %}
 
 {% block content %}
-<h2>Budget Wizard - Step 1: Select PI and Budget Years</h2>
+<div class="wizard-steps">
+    <div class="step active">
+        <strong>1. Project Info</strong>
+    </div>
+    <div class="step">
+        2. Personnel & Travel
+    </div>
+    <div class="step">
+        3. Review
+    </div>
+</div>
 
-<form action="{{ url_for('budget.step1') }}" method="post">
-    <label for="pi_id">Select Principal Investigator (PI):</label>
-    <select name="pi_id" id="pi_id" required>
-        {% for pi in pis %}
-            <option value="{{ pi.faculty_id }}">{{ pi.name }}</option>
-        {% endfor %}
-    </select>
-    <br><br>
+<h2>Budget Wizard - Step 1</h2>
+<p class="text-muted mb-3">Select the Principal Investigator and define the project timeline.</p>
 
-    <label for="start_year">Start Year:</label>
-    <input type="number" name="start_year" id="start_year" value="2026" required>
-    <br><br>
+<div class="card">
+    <form action="{{ url_for('budget.step1') }}" method="post">
+        <div class="form-group">
+            <label for="pi_id">Principal Investigator (PI)</label>
+            <select name="pi_id" id="pi_id" required>
+                <option value="" disabled selected>Select a faculty member...</option>
+                {% for pi in pis %}
+                    <option value="{{ pi.faculty_id }}">{{ pi.name }} - {{ pi.title or 'Faculty' }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <label for="end_year">End Year:</label>
-    <input type="number" name="end_year" id="end_year" value="2030" required>
-    <br><br>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="start_year">Start Year</label>
+                <input type="number" name="start_year" id="start_year" value="2026" min="2020" max="2050" required>
+            </div>
 
-    <button type="submit">Next Step</button>
-</form>
+            <div class="form-group">
+                <label for="end_year">End Year</label>
+                <input type="number" name="end_year" id="end_year" value="2030" min="2020" max="2050" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-primary">Next Step →</button>
+    </form>
+</div>
+
+{% if not pis %}
+<div class="alert alert-warning mt-3">
+    <strong>No Faculty Members Found</strong><br>
+    Please <a href="{{ url_for('faculty.index') }}">add faculty members</a> before creating a budget.
+</div>
+{% endif %}
+
 {% endblock %}

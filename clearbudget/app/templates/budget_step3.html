@@ -1,103 +1,150 @@
 {% extends 'base.html' %}
 
-{% block title %}Budget Wizard - Step 3{% endblock %}
+{% block title %}Budget Review - Clear Budget{% endblock %}
 
 {% block content %}
-<h2>Budget Wizard - Step 3: Review Budget</h2>
+<div class="wizard-steps">
+    <div class="step">
+        1. Project Info
+    </div>
+    <div class="step">
+        2. Personnel & Travel
+    </div>
+    <div class="step active">
+        <strong>3. Review</strong>
+    </div>
+</div>
 
+<h2>📊 Budget Review</h2>
+<p class="text-muted mb-3">Review your complete budget breakdown before exporting.</p>
+
+<!-- Personnel Summary -->
 <h3>Personnel Summary</h3>
 {% if personnel %}
-<table border="1" cellpadding="5">
-    <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>FTE (%)</th>
-        <th>Salary ($)</th>
-        <th>Fringe ($)</th>
-        <th>Tuition ($)</th>
-    </tr>
-    {% for p in personnel %}
-    <tr>
-        <td>{{ p.name }}</td>
-        <td>{{ p.role }}</td>
-        <td>{{ p.fte }}</td>
-        <td>{{ "%.2f"|format(p.get('salary',69) )}}</td>
-        <td>{{ "%.2f"|format(p.get('salary', 69) * p.get('fringe',0) / 100)}}</td>
-        <td>{{ "%.2f"|format(p.get('tuition',0)) if p.get('type')=='Student' else 0 }}</td>
-    </tr>
-    {% endfor %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>FTE</th>
+            <th>Salary</th>
+            <th>Fringe</th>
+            <th>Tuition</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in personnel %}
+        <tr>
+            <td><strong>{{ p.name }}</strong></td>
+            <td>{{ p.role }}</td>
+            <td>{{ "%.2f"|format(p.fte * 100) }}%</td>
+            <td>${{ "{:,.2f}".format(p.get('salary', 0)) }}</td>
+            <td>${{ "{:,.2f}".format(p.get('salary', 0) * p.get('fringe', 0) / 100) }}</td>
+            <td>${{ "{:,.2f}".format(p.get('tuition', 0) if p.get('role')=='Student' else 0) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
 
-<h4>Total Salary: ${{ "%.2f"|format(total_salary) }}</h4>
-<h4>Total Fringe: ${{ "%.2f"|format(total_fringe) }}</h4>
-<h4>Total Tuition: ${{ "%.2f"|format(total_tuition) }}</h4>
-
-
-<h3>Travel Summary</h3>
-{% if travel_list %}
-<table border="1" cellpadding="5">
-    <tr>
-        <th>Profile Name</th>
-        <th>Type</th>
-        <th>Days</th>
-        <th>Airfare ($)</th>
-        <th>Per Diem ($)</th>
-        <th>Lodging ($)</th>
-        <th>Total ($)</th>
-    </tr>
-    {% for t in travel_list %}
-    <tr>
-        <td>{{ t.name }}</td>
-        <td>{{ t.type }}</td>
-        <td>{{ t.days }}</td>
-        <td>{{ "%.2f"|format(t.airfare) }}</td>
-        <td>{{ "%.2f"|format(t.per_diem) }}</td>
-        <td>{{ "%.2f"|format(t.lodging) }}</td>
-        <td>{{ "%.2f"|format(t.total) }}</td>
-    </tr>
-    {% endfor %}
-</table>
-
-<h4>Total Travel: ${{ "%.2f"|format(total_travel) }}</h4>
+<div class="summary-card">
+    <h4>Personnel Totals</h4>
+    <p><strong>Total Salary:</strong> ${{ "{:,.2f}".format(total_salary) }}</p>
+    <p><strong>Total Fringe:</strong> ${{ "{:,.2f}".format(total_fringe) }}</p>
+    <p><strong>Total Tuition:</strong> ${{ "{:,.2f}".format(total_tuition) }}</p>
+</div>
 {% else %}
-<p>No travel entries added yet.</p>
+<div class="empty-state">
+    <p>No personnel added to this budget.</p>
+</div>
 {% endif %}
 
-<h4>F&A Overhead ({{ fa_rate }}%): ${{ "%.2f"|format(fa_cost) }}</h4>
+<!-- Travel Summary -->
+<h3>✈️ Travel Summary</h3>
+{% if travel_list %}
+<table>
+    <thead>
+        <tr>
+            <th>Event</th>
+            <th>Type</th>
+            <th>Days</th>
+            <th>Airfare</th>
+            <th>Per Diem</th>
+            <th>Lodging</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in travel_list %}
+        <tr>
+            <td><strong>{{ t.name }}</strong></td>
+            <td>{{ t.type }}</td>
+            <td>{{ t.days }}</td>
+            <td>${{ "{:,.2f}".format(t.airfare) }}</td>
+            <td>${{ "{:,.2f}".format(t.per_diem) }}</td>
+            <td>${{ "{:,.2f}".format(t.lodging) }}</td>
+            <td><strong>${{ "{:,.2f}".format(t.total) }}</strong></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-<h4>Direct costs: ${{"%.2f"|format(prime_total)}}</h4>
+<div class="summary-card">
+    <h4>Travel Total: ${{ "{:,.2f}".format(total_travel) }}</h4>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No travel items added to this budget.</p>
+</div>
+{% endif %}
 
+<!-- Subawards Summary -->
 <h3>Subawards Summary</h3>
 {% if subaward_totals %}
-<table border="1" cellpadding="5">
-    <tr>
-        <th>Institution</th>
-        <th>Direct Costs ($)</th>
-        <th>F&A ($)</th>
-        <th>Total ($)</th>
-    </tr>
-    {% for sa in subaward_totals %}
-    <tr>
-        <td>{{ sa.institution }}</td>
-        <td>{{ "%.2f"|format(sa.direct) }}</td>
-        <td>{{ "%.2f"|format(sa.fa) }}</td>
-        <td>{{ "%.2f"|format(sa.total) }}</td>
-    </tr>
-    {% endfor %}
+<table>
+    <thead>
+        <tr>
+            <th>Institution</th>
+            <th>Direct Costs</th>
+            <th>F&A</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sa in subaward_totals %}
+        <tr>
+            <td><strong>{{ sa.institution }}</strong></td>
+            <td>${{ "{:,.2f}".format(sa.direct) }}</td>
+            <td>${{ "{:,.2f}".format(sa.fa) }}</td>
+            <td><strong>${{ "{:,.2f}".format(sa.total) }}</strong></td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
 {% else %}
-<p>No subawards added.</p>
+<div class="empty-state">
+    <p>No subawards added to this budget.</p>
+</div>
 {% endif %}
 
-<h3>Grand Total (Direct Costs + F&A + Subawards): ${{ "%.2f"|format(grand_total) }}</h3>
+<!-- Budget Totals -->
+<div class="total-highlight">
+    <h3>Budget Summary</h3>
+    <p style="font-size: 1.125rem;"><strong>Direct Costs (Prime):</strong> ${{ "{:,.2f}".format(prime_total) }}</p>
+    <p style="font-size: 1.125rem;"><strong>F&A Overhead ({{ fa_rate }}%):</strong> ${{ "{:,.2f}".format(fa_cost) }}</p>
+    {% if subaward_totals %}
+    <p style="font-size: 1.125rem;"><strong>Subawards Total:</strong> ${{ "{:,.2f}".format(sum([sa.total for sa in subaward_totals])) }}</p>
+    {% endif %}
+    <hr style="margin: 1rem 0; border: none; border-top: 2px solid #065f46;">
+    <h3 style="font-size: 2rem; margin: 0;">Grand Total: ${{ "{:,.2f}".format(grand_total) }}</h3>
+</div>
 
+<!-- Export Button -->
+<div style="text-align: center; margin-top: 2rem;">
+    <form action="{{ url_for('budget.export_excel') }}">
+        <button type="submit" class="btn-primary" style="font-size: 1.125rem; padding: 1rem 2rem;">
+            Export Budget to Excel
+        </button>
+    </form>
+</div>
 
-{% else %}
-<p>No personnel added yet.</p>
-{% endif %}
-
-<br>
-<form action="{{ url_for('budget.export_excel') }}">
-    <button type="submit">Export Budget to Excel</button>
-</form>
 {% endblock %}
