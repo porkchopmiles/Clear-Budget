@@ -43,7 +43,7 @@
 
 2. Set up the MySQL database:
    - Create a new database (e.g., `clearbudget_db`)
-   - Create necessary tables (see `schema.sql`)
+   - Create necessary tables (see `schema/`)
    - Update database credentials in the Python backend
 
 3. Install Python dependencies:
@@ -95,4 +95,5 @@ This project is open-source under the MIT License. See the [LICENSE](LICENSE) fi
 ## About
 
 Budget builder for UofI researchers built with HTML, Python, and MySQL.
+
 
