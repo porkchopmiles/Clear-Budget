@@ -17,8 +17,8 @@
 
 ## Tech Stack
 
-- **Backend:** Python (Flask or similar)
-- **Frontend:** HTML (optionally with CSS/JS enhancements)
+- **Backend:** Python (Flask)
+- **Frontend:** HTML and CSS
 - **Database:** MySQL
 - Lightweight and easy to deploy locally or on a server
 
@@ -43,10 +43,10 @@
 
 2. Set up the MySQL database:
    - Create a new database (e.g., `clearbudget_db`)
-   - Create necessary tables (see `schema.sql` if available)
+   - Create necessary tables (see `schema.sql`)
    - Update database credentials in the Python backend
 
-3. Install Python dependencies (if provided):
+3. Install Python dependencies:
    ```bash
    pip install -r requirements.txt
    ```
@@ -56,7 +56,7 @@
    python app.py
    ```
 
-5. Open your browser and navigate to the web interface (usually `http://localhost:5000`) to begin using Clear-Budget.
+5. Open your browser and navigate to the web interface (`http://localhost:5000`) to begin using Clear-Budget.
 
 ---
 
@@ -70,28 +70,6 @@
    - Amount / Quantity
 4. Review totals, edit or delete items as needed
 5. Save or export budget summary for reports or grant applications
-
----
-
-## Example Database Schema
-
-```sql
-CREATE TABLE budgets (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  project_name VARCHAR(255),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE budget_items (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  budget_id INT,
-  category VARCHAR(100),
-  description VARCHAR(255),
-  amount DECIMAL(10,2),
-  quantity INT,
-  FOREIGN KEY (budget_id) REFERENCES budgets(id)
-);
-```
 
 ---
 
@@ -117,3 +95,4 @@ This project is open-source under the MIT License. See the [LICENSE](LICENSE) fi
 ## About
 
 Budget builder for UofI researchers built with HTML, Python, and MySQL.
+
